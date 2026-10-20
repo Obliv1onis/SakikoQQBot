@@ -616,8 +616,7 @@
     const es = new EventSource('/api/stream');
 
     es.onopen = () => {
-      statusDot.className = 'dot on';
-      statusText.textContent = 'Online';
+      refreshStats();
     };
 
     es.onerror = () => {
@@ -637,7 +636,10 @@
   async function refreshStats() {
     try {
       const res = await fetch('/api/stats');
+      if (!res.ok) throw new Error('状态查询失败');
       const data = await res.json();
+      statusDot.className = data.napcatConnected ? 'dot on' : 'dot off';
+      statusText.textContent = data.napcatConnected ? 'QQ Online' : 'QQ Offline';
 
       knownUserCountEl.textContent = data.knownUserCount ?? 0;
       meltdownCountEl.textContent = (data.meltdownUsers || []).length;
@@ -666,6 +668,8 @@
         meltdownListEl.appendChild(item);
       }
     } catch (err) {
+      statusDot.className = 'dot off';
+      statusText.textContent = 'Disconnected';
       console.error('拉取状态失败', err);
     }
   }
@@ -675,9 +679,10 @@
   const feedbackEl = document.getElementById('controlFeedback');
 
   async function forceChat() {
+    if (forceChatBtn.disabled) return;
     const targetId = targetIdInput.value.trim();
-    if (!targetId) {
-      feedbackEl.textContent = '请先输入 QQ 号 desuwa';
+    if (!/^[1-9]\d{0,15}$/.test(targetId) || !Number.isSafeInteger(Number(targetId))) {
+      feedbackEl.textContent = '请输入有效的数字 QQ 号 desuwa';
       feedbackEl.className = 'err';
       return;
     }
@@ -760,6 +765,7 @@
   }
 
   async function queryWiretap() {
+    if (wiretapBtn.disabled) return;
     const userId = wiretapIdInput.value.trim();
     if (!userId) return;
 
@@ -771,6 +777,7 @@
     try {
       const res = await fetch(`/api/history/${encodeURIComponent(userId)}`);
       const history = await res.json();
+      if (!res.ok) throw new Error(history.error || '查询失败');
       renderHistory(history);
     } catch (err) {
       modalBody.innerHTML = `<div class="modal-empty">查询失败：${escapeHtml(err.message)}</div>`;
@@ -787,6 +794,7 @@
   // ---------- 动态人格切换：手动锁定白天/深夜人格，或者切回按时间自动判断 ----------
   personaSelectEl.addEventListener('change', async () => {
     const mode = personaSelectEl.value;
+    personaSelectEl.disabled = true;
     try {
       const res = await fetch('/api/set-persona', {
         method: 'POST',
@@ -794,12 +802,16 @@
         body: JSON.stringify({ mode }),
       });
       const data = await res.json();
+      if (!res.ok) throw new Error(data.error || '切换失败');
       if (data.currentPersona) {
         personaNameEl.textContent = data.currentPersona;
         applyPersonaVisual(data.currentPersona);
       }
     } catch (err) {
       console.error('切换人格失败', err);
+      await refreshStats();
+    } finally {
+      personaSelectEl.disabled = false;
     }
   });
 

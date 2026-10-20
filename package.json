@@ -5,17 +5,20 @@
   "main": "index.js",
   "scripts": {
     "start": "node index.js",
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "node --test",
+    "check": "node --check index.js && node --check lib/conversation-queue.js"
   },
   "keywords": [],
   "author": "",
-  "license": "ISC",
+  "license": "GPL-3.0-only",
   "type": "commonjs",
   "dependencies": {
     "dotenv": "^17.4.2",
     "express": "^5.2.1",
-    "node-cron": "^4.6.0",
     "openai": "^6.46.0",
     "ws": "^8.21.0"
+  },
+  "engines": {
+    "node": ">=22"
   }
 }
