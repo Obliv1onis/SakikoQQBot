@@ -91,6 +91,30 @@ function response() {
   return { statusCode: 200, body: null, headers: {}, status(code) { this.statusCode = code; return this; }, json(data) { this.body = data; return this; }, set(key, value) { this.headers[key] = value; return this; } };
 }
 
+test('private poke enters normal conversation buffering and clears unanswered opener', async (t) => {
+  const h = harness(t);
+  h.run("getState('123').unansweredOpener = true");
+  h.context.event = { post_type: 'notice', notice_type: 'notify', sub_type: 'poke', user_id: 123, self_id: 456, target_id: 456 };
+  h.run('handleEvent(event)');
+  assert.equal(h.run("getState('123').unansweredOpener"), false);
+  await h.run("flushUser('123')");
+  assert.match(h.requests[0].params.messages.at(-1).content, /QQ戳一戳/);
+  assert.equal(h.sent.length, 1);
+});
+
+test('poke respects cooldown and structured-only faces reach the model', async (t) => {
+  const h = harness(t);
+  h.run("getState('123').meltdownUntil = Date.now() + 10000");
+  h.context.event = { post_type: 'notice', notice_type: 'notify', sub_type: 'poke', user_id: 123, self_id: 456, target_id: 456 };
+  h.run('handleEvent(event)');
+  assert.equal(h.run("getState('123').buffer.length"), 0);
+  h.run("getState('123').meltdownUntil = 0");
+  h.context.event = { post_type: 'message', message_type: 'private', user_id: 123, message_id: 7, message: [{ type: 'face', data: { id: 14 } }] };
+  h.run('handleEvent(event)');
+  await h.run("flushUser('123')");
+  assert.match(h.requests[0].params.messages.at(-1).content, /QQ表情：微笑/);
+});
+
 test('same user is serialized; other users are independent; failures do not poison queue', async () => {
   const queue = new ConversationQueue();
   const gate = deferred();

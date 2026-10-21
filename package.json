@@ -6,7 +6,7 @@
   "scripts": {
     "start": "node index.js",
     "test": "node --test",
-    "check": "node --check index.js && node --check lib/conversation-queue.js"
+    "check": "node --check index.js && node --check lib/conversation-queue.js && node --check lib/qq-message.js"
   },
   "keywords": [],
   "author": "",
