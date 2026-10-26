@@ -1,4 +1,4 @@
-# sakiko-bot
+# SakikoQQBot
 
 基于 Node.js 的 QQ 私聊机器人，通过 NapCatQQ 收发消息，使用兼容 OpenAI 接口的语言模型生成回复。角色设定为《BanG Dream!》中的丰川祥子，支持角色扮演、中文和日语对话，以及本地管理后台。
 
